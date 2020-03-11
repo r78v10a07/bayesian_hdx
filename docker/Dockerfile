@@ -44,6 +44,6 @@ RUN mkdir /home/ubuntu/bin
 RUN chown -R ubuntu /home/ubuntu
 USER ubuntu
 ENV PYTHONPATH=${DST}/bayesian_hdx/pyext/src
-ENV PATH=${DST}/bin:$PATH
+ENV PATH=${DST}/bayesian_hdx/bin:$PATH
 
 WORKDIR /data/
