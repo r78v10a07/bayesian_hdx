@@ -25,6 +25,12 @@ parser.add_argument('--init', metavar='z', type=str,
 parser.add_argument('--bins', metavar='b', type=int,
                     help='Integer number of rate constant bins to use for sampling. Default is 20.',
                     required=False)
+parser.add_argument('--sigma0', help='Estimate for experimental error in %%D Units.  Default: 5',
+                    default=5, required=False)
+parser.add_argument('--annealing_steps', help='Steps per temperature in annealing - 100-200 sufficient.  Default: 20',
+                    default=200, required=False)
+parser.add_argument('--saturation', help='Deuterium saturation in experiment.  Default: 1.0',
+                    default=1.0, required=False)
 
 args = parser.parse_args()
 
@@ -103,10 +109,11 @@ else:
 num_best_models=1000      # Number of best models to consider for analysis
 
 
+
 # Non user controlled vbl - for now. 
-annealing_steps=200       # steps per temperature in annealing - 100-200 sufficient
-sigma0=5                  # Estimate for experimental error in %D Units 
-saturation = 1.0            # Deuterium saturation in experiment
+annealing_steps = args.annealing_steps       # steps per temperature in annealing - 100-200 sufficient
+sigma0 = args.sigma0                  # Estimate for experimental error in %D Units
+saturation = args.saturation         # Deuterium saturation in experiment
 percentD=True             # Is the data in percent D (True) or Deuterium units? - Always percentD for Workbench.
 ###############################
 ###   System Setup:
@@ -147,18 +154,18 @@ if run_type=="sampling":
 ###############################
 ###   Analysis:
 
-plots.plot_2state_fragment_avg_model_fits(model.states[0], model.states[1], 
-                                          sig=5.0, 
-                                          num_best_models=num_best_models, 
-                                          write_file=False, 
-                                          outdir=outputdir, 
-                                          show_plot=False)
-
-plots.plot_apo_lig_dhdx(model, show_plot=True, save_plot=False, 
-                                          outfile="dhdx.png", 
-                                          outdir=outputdir, 
+# plots.plot_2state_fragment_avg_model_fits(model.states[0], model.states[1],
+#                                           sig=5.0,
+#                                           num_best_models=num_best_models,
+#                                           write_file=False,
+#                                           outdir=outputdir,
+#                                           show_plot=False)
+#
+plots.plot_apo_lig_dhdx(model, show_plot=True, save_plot=False,
+                                          outfile="dhdx.png",
+                                          outdir=outputdir,
                                           noclobber=False)
-
-plots.plot_fragment_chi_values(model.states[0], sig="model", outdir=outputdir, show_plot=True)
-plots.plot_fragment_chi_values(model.states[1], sig="model", outdir=outputdir, show_plot=True)
+#
+# plots.plot_fragment_chi_values(model.states[0], sig="model", outdir=outputdir, show_plot=True)
+# plots.plot_fragment_chi_values(model.states[1], sig="model", outdir=outputdir, show_plot=True)
 
