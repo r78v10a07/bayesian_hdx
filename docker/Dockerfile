@@ -34,6 +34,7 @@ RUN ln -sfn /usr/bin/python3.6 /usr/bin/python
 
 RUN cd $DST && \
     git clone $URL && \
+    cd bayesian_hdx && \
     git checkout hdxworkbench-script.v1 && \
     chmod a+x $DST/bin/* && \
     pip3 install -r $DST/requirements.txt
