@@ -36,8 +36,8 @@ RUN cd $DST && \
     git clone $URL && \
     cd bayesian_hdx && \
     git checkout hdxworkbench-script.v1 && \
-    chmod a+x $DST/bin/* && \
-    pip3 install -r $DST/requirements.txt
+    chmod a+x $DST/bayesian_hdx/bin/* && \
+    pip3 install -r $DST/bayesian_hdx/requirements.txt
 
 RUN adduser --disabled-password --gecos '' ubuntu
 RUN chmod a+rwx /home/ubuntu/
