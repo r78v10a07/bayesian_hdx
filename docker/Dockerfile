@@ -15,7 +15,7 @@ LABEL tags="HDX"
 MAINTAINER Roberto Vera Alvarez <r78v10a07@gmail.com>
 
 ENV URL=https://github.com/r78v10a07/bayesian_hdx
-ENV DST=/usr/local/
+ENV DST=/usr/local
 
 USER root
 
