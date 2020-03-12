@@ -21,24 +21,24 @@ if __name__ == '__main__':
                         required=False)
     parser.add_argument('--num_exp_bins', help='Number of log(kex) values for sampling. 20 is generally sufficient. '
                                                'Default: 20',
-                        default=20,
+                        default=20, type=int,
                         required=False)
     parser.add_argument('--offset', help='Offset between fragment start/end values and FASTA sequence. '
                                          'Default: 0',
-                        default=0, required=False)
+                        default=0, type=int, required=False)
     parser.add_argument('--sigma0', help='Estimate for experimental error in %%D Units. '
                                          'Default: 5',
-                        default=5, required=False)
+                        default=5, type=float, required=False)
     parser.add_argument('--annealing_steps', help='Steps per temperature in annealing - 100-200 sufficient. '
                                                   'Default: 20',
                         default=20, required=False)
     parser.add_argument('--nsteps', help='Equilibrium steps. 5000 to 10000. '
                                          'Default: 1000',
-                        default=1000, required=False)
+                        default=1000, type=int, required=False)
 
     parser.add_argument('--saturation', help='Deuterium saturation in experiment. '
                                          'Default: 1.0',
-                        default=1.0, required=False)
+                        default=1.0, type=float, required=False)
 
     args = parser.parse_args()
     if not os.path.exists(args.w):
