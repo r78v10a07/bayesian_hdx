@@ -17,12 +17,10 @@ if __name__ == '__main__':
     parser.add_argument('--init', help='How to initialize - either "random" or "enumerate". '
                                        'Enumerate is slower but sampling will converge faster. '
                                        'Default: enumerate',
-                        default="enumerate",
-                        required=False)
+                        default="enumerate", required=False)
     parser.add_argument('--num_exp_bins', help='Number of log(kex) values for sampling. 20 is generally sufficient. '
                                                'Default: 20',
-                        default=20, type=int,
-                        required=False)
+                        default=20, type=int, required=False)
     parser.add_argument('--offset', help='Offset between fragment start/end values and FASTA sequence. '
                                          'Default: 0',
                         default=0, type=int, required=False)
@@ -31,7 +29,7 @@ if __name__ == '__main__':
                         default=5, type=float, required=False)
     parser.add_argument('--annealing_steps', help='Steps per temperature in annealing - 100-200 sufficient. '
                                                   'Default: 20',
-                        default=20, required=False)
+                        default=20, type=int, required=False)
     parser.add_argument('--nsteps', help='Equilibrium steps. 5000 to 10000. '
                                          'Default: 1000',
                         default=1000, type=int, required=False)
