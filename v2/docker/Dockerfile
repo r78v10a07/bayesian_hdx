@@ -32,13 +32,6 @@ RUN apt-get clean all && \
 
 RUN ln -sfn /usr/bin/python3.6 /usr/bin/python
 
-RUN cd $DST && \
-    git clone $URL && \
-    cd bayesian_hdx && \
-    git checkout hdxworkbench-script.v1 && \
-    chmod a+x $DST/bayesian_hdx/bin/* && \
-    pip3 install -r $DST/bayesian_hdx/requirements.txt
-
 RUN cd /tmp && \
     git clone $URL && \
     cd bayesian_hdx && \
