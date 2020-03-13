@@ -31,11 +31,19 @@ RUN apt-get clean all && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN ln -sfn /usr/bin/python3.6 /usr/bin/python
-RUN mkdir $DST
+
+RUN cd $DST && \
+    git clone $URL && \
+    cd bayesian_hdx && \
+    git checkout hdxworkbench-script.v1 && \
+    chmod a+x $DST/bayesian_hdx/bin/* && \
+    pip3 install -r $DST/bayesian_hdx/requirements.txt
 
 RUN cd /tmp && \
     git clone $URL && \
-    mv bayesian_hdx/v2/* $DST/ && \
+    cd bayesian_hdx && \
+    git checkout hdxworkbench-script.v1 && \
+    mv v2/* $DST/ && \
     chmod a+x $DST/bin/* && \
     pip3 install -r $DST/requirements.txt
 
