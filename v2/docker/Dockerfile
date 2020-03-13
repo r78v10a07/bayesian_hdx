@@ -31,6 +31,7 @@ RUN apt-get clean all && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN ln -sfn /usr/bin/python3.6 /usr/bin/python
+RUN mkdir -p $DST
 
 RUN cd /tmp && \
     git clone $URL && \
