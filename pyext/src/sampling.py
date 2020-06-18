@@ -33,22 +33,23 @@ def metropolis_criteria(old_score, new_score, temp, proposal_ratio=0.4):
 
 # Connect this object to a Residue
 class SampledInt(object):
-    def __init__(self, allowed_range, random=True, adjacency=3, is_sampled=True):
+    def __init__(self, allowed_range, random=True, adjacency=3, is_sampled=True, uniform=True):
         self.range=allowed_range # range of values this integer can be
         self.random=random # Are we doing random assignment?
         self.adjacency=adjacency # What is the range of values that delta can be?
         self.moved=False
-        #self.index=initialize()
+        self.uniform=uniform # Choose step magnitude from uniform distribution or Normal distribution (False)
 
-    def initialize():
+    def initialize(self):
         self.propose_move()
 
-    def set_adjacency(self, is_adjacency, adjacency):
+    def set_adjacency(self, is_adjacency, adjacency, uniform=True):
         if is_adjacency:
             self.random = False
             self.adjacency = adjacency
         else:
             self.random = True
+        self.uniform = uniform
 
     def set_range(self, allowed_range):
         self.range=allowed_range
@@ -75,7 +76,7 @@ class SampledInt(object):
             new_index = -1
             while new_index < 0 or new_index >= len(self.range):
                 sign = numpy.random.randint(0,2) * 2 - 1
-                magnitude = numpy.random.randint(1, self.adjacency+1)
+                magnitude = self.get_magnitude()
                 new_index = int(self.old_index + magnitude * sign)
 
             # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -84,6 +85,12 @@ class SampledInt(object):
             return self.range[new_index]
 
         self.moved=True
+
+    def get_magnitude(self):
+        if self.uniform:
+            return numpy.random.randint(1, self.adjacency + 1)
+        else:
+            return int(numpy.ceil(abs(numpy.random.normal(0, self.adjacency))))
 
     def accept(self):
         # Keep the residue object the same
@@ -231,6 +238,7 @@ class MCSampler(object):
                                 steps_per_anneal=1, 
                                 write=False, 
                                 adjacency=10,
+                                uniform_adjacency=True,
                                 quiet=False):
         '''
         A simulated annealing that starts from high temperature and gradually cools
@@ -238,7 +246,7 @@ class MCSampler(object):
         '''
         
         # Set how far each residue can move.
-        self.residue_sampler.set_adjacency(True, adjacency)
+        self.residue_sampler.set_adjacency(True, adjacency, uniform=uniform_adjacency)
 
         print("********")
         print("Starting Exponential Temperature Decay from")
@@ -362,7 +370,7 @@ class MCSampler(object):
                     output.write_model_to_file(output_files[s], st, model, st.score, acceptance, sigmas=True)
 
         acceptance_ratio = acceptance_total/NSTEPS
-        print("Average acceptance ratio for this run = ", acceptance_ratio, " |  Temp = ", temperature)
+        print("Average acceptance ratio for this run =", round(acceptance_ratio, 3), " |  Temp = ", temperature)
 
         for of in output_files:
             of.close()  
@@ -455,7 +463,7 @@ class MCSampler(object):
         model_avg = [numpy.average(s.output_model.get_current_model()) for s in self.states]
         model_avg_str = ""
         for m in model_avg:
-            model_avg_str+=str(m)+" "
+            model_avg_str+=str(round(m,3))+" "
 
         return total_score, model_avg_str[0:-1], acceptance_ratio/len(self.states)#, m_sq_change #acceptance_ratio/len(self.states)
 
