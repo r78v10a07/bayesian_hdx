@@ -2,43 +2,63 @@
 
 import os
 import sys
+import glob
 import argparse
+import numpy
 import sampling
+import analysis
 import system
 import model
 import hxio
+
+
+def print_dhdx(dhdx, resrange, weighted=False):
+    filename = os.path.join(args.outputdir, '{}_{}_{}'.format(molecule_name, state_name1, state_name2))
+    if weighted:
+        filename += '_weighted.dhdx'
+    else:
+        filename += '.dhdx'
+    print('Printing data to: {}'.format(filename))
+    with open(filename, "w") as f:
+        f.write("Res#,Res,dhdx,dhdx_z,avg_state2,avg_state1,sd_state2,sd_state1\n")
+        diff, Z, mean1, mean2, sd1, sd2 = dhdx.calculate_dhdx(weighted=weighted)
+        for r in resrange:
+            f.write('{},{},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f}\n'.format(
+                r, sequence[r - 1], diff[r - 1], Z[r - 1], mean2[r - 1], mean1[r - 1],
+                sd2[r - 1], sd1[r - 1]).replace('nan', ''))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Bayesian Analysis of HDX-MS Data.\nThis script process a CVS datafile exported by HDXWorkbench')
 
     parser.add_argument('-w', help='HDXWorkbench CSV file', required=True)
-    parser.add_argument('-o','--outputdir', help='Output directory.', required=True)
+    parser.add_argument('-o', '--outputdir', help='Output directory.', required=True)
     parser.add_argument('--init', help='How to initialize - either "random" or "enumerate". '
                                        'Enumerate is slower but sampling will converge faster. '
                                        'Default: enumerate',
-                        default="enumerate",
-                        required=False)
+                        default="enumerate", required=False)
     parser.add_argument('--num_exp_bins', help='Number of log(kex) values for sampling. 20 is generally sufficient. '
                                                'Default: 20',
-                        default=20,
-                        required=False)
+                        default=20, type=int, required=False)
     parser.add_argument('--offset', help='Offset between fragment start/end values and FASTA sequence. '
                                          'Default: 0',
-                        default=0, required=False)
+                        default=0, type=int, required=False)
     parser.add_argument('--sigma0', help='Estimate for experimental error in %%D Units. '
                                          'Default: 5',
-                        default=5, required=False)
+                        default=5, type=float, required=False)
     parser.add_argument('--annealing_steps', help='Steps per temperature in annealing - 100-200 sufficient. '
                                                   'Default: 20',
-                        default=20, required=False)
+                        default=20, type=int, required=False)
     parser.add_argument('--nsteps', help='Equilibrium steps. 5000 to 10000. '
                                          'Default: 1000',
-                        default=1000, required=False)
-
+                        default=1000, type=int, required=False)
     parser.add_argument('--saturation', help='Deuterium saturation in experiment. '
-                                         'Default: 1.0',
-                        default=1.0, required=False)
+                                             'Default: 1.0',
+                        default=1.0, type=float, required=False)
+    parser.add_argument('--num_models', help='Number of models. '
+                                             'Default: 1000',
+                        default=1000, type=int, required=False)
 
     args = parser.parse_args()
     if not os.path.exists(args.w):
@@ -100,17 +120,6 @@ if __name__ == '__main__':
     # First, run a short minimization step
     sampler.run(50, 0.0001, write=True)
 
-    '''
-    for dataset in datasets:
-      for pep in dataset.get_peptides():
-        for tp in pep.get_timepoints():
-            #try:
-            i = tp.get_replicates()[0]
-            rep_score = -1*math.log(state.scoring_function.replicate_score(tp.get_model_deuteration()/pep.num_observable_amides*100, tp.get_replicates()[0].deut, tp.get_sigma()))
-            print pep.sequence, tp.time, tp.get_model_deuteration()/pep.num_observable_amides*100, tp.get_replicates()[0].deut, tp.get_score(), rep_score, "|", tp.get_sigma(), -1*math.log(state.scoring_function.experimental_sigma_prior(tp.get_sigma(), sigma0))
-            #except:
-            #    pass
-    '''
     # Slowly cool system
     sampler.run(args.annealing_steps, 3)
 
@@ -124,3 +133,33 @@ if __name__ == '__main__':
 
     # This temperature tends to sit around 15% MC acceptance rate, which seems to be good.
     sampler.run(args.nsteps, 1, write=True)
+
+    dat_files = glob.glob(os.path.join(args.outputdir, "*.dat"))
+
+    if len(dat_files) > 1:
+        pofs = []
+        for f in dat_files:
+            print('Loading ' + f)
+            oa = analysis.OutputAnalysis([f])
+            conv = oa.get_convergence(args.num_models)
+            distmat = conv.get_distance_matrix(num_models='all')
+            cutoff_list = conv.get_cutoffs_list(1.0)
+            pvals, cvs, percents = conv.get_clusters(cutoff_list)
+            sampling_precision, pval_converged, cramersv_converged, percent_converged = conv.get_sampling_precision(
+                cutoff_list, pvals, cvs, percents)
+            pof = conv.cluster_at_threshold_and_return_pofs(sampling_precision)
+            pofs.append(pof)
+
+        for i in range(0, len(pofs) - 1):
+            for j in range(i + 1, len(pofs)):
+                state_name1 = pofs[i][0].state_name
+                state_name2 = pofs[j][0].state_name
+                print('Comparing states: {} vs {}'.format(state_name1, state_name2))
+                molecule_name = pofs[i][0].molecule_name
+                sequence = pofs[i][0].get_sequence()
+                minres = min(min(pofs[i][0].observed_residues), min(pofs[j][0].observed_residues))
+                maxres = max(max(pofs[i][0].observed_residues), max(pofs[j][0].observed_residues))
+                resrange = range(minres, maxres)
+                dhdx = analysis.DeltaHDX(pofs[i][0], pofs[j][0])
+                print_dhdx(dhdx, resrange)
+                print_dhdx(dhdx, resrange, True)
