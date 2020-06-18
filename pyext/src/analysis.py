@@ -332,16 +332,28 @@ class DeltaHDX(object):
 
     def calculate_dhdx(self, weighted=True):
         # Calculates delta HDX
-        #pf_models1 = numpy.array([m[1][0] for m in self.pof1.get_models(return_pf=True)])
-        #pf_models2 = numpy.array([m[1][0] for m in self.pof2.get_models(return_pf=True)])
-        pf_models1 = numpy.array([m[1][0] for m in self.pof1.get_all_models(return_pf=True)])
-        scores1 = numpy.array([m[0] for m in self.pof1.get_all_models(return_pf=True)])
-        pf_models2 = numpy.array([m[1][0] for m in self.pof2.get_all_models(return_pf=True)])
-        scores2 = numpy.array([m[0] for m in self.pof2.get_all_models(return_pf=True)])
+        pf_models1 = []
+        scores1 = []
+        for m in self.pof1.get_all_models(return_pf=True)[0]:
+            pf_models1.append(m[1][0])
+            scores1.append(m[0])
+
+        pf_models1 = numpy.array(pf_models1).astype(float)
+        scores1 = numpy.array(scores1).astype(float)
+
+        pf_models2 = []
+        scores2 = []
+        for m in self.pof2.get_all_models(return_pf=True)[0]:
+            pf_models2.append(m[1][0])
+            scores2.append(m[0])
+
+        pf_models2 = numpy.array(pf_models2).astype(float)
+        scores2 = numpy.array(scores2).astype(float)
 
         if weighted:
-            weights1 = exp(-1*(scores1-min(scores1)))
+            weights1 = numpy.exp(-1 * (scores1 - min(scores1)))
             mean1 = numpy.average(pf_models1, axis=0, weights=weights1)
+            weights2 = numpy.exp(-1 * (scores2 - min(scores2)))
             mean2 = numpy.average(pf_models1, axis=0, weights=weights2)
         else:
             mean1 = numpy.mean(pf_models1, axis=0)
@@ -351,7 +363,7 @@ class DeltaHDX(object):
         std2 = numpy.std(pf_models2, axis=0)
 
         diff = mean2 - mean1
-        Z = (mean2 - mean1)/numpy.sqrt(numpy.square(std1)+numpy.square(std2)+0.0000001)
+        Z = (mean2 - mean1) / numpy.sqrt(numpy.square(std1) + numpy.square(std2) + 0.0000001)
 
         return diff, Z, mean1, mean2, std1, std2
 
@@ -418,6 +430,7 @@ class ParseOutputFile(object):
         self.sectors = []
         self.models=[]
         self.pf_grids = {}
+        self.sequence = ''
         self.parse_header()
         if all_observed:
             self.observed_residues = list(set([item for sublist in self.sectors for item in sublist]))
@@ -974,7 +987,7 @@ class OutputAnalysis(object):
 
     def get_best_scoring_models(self, num):
         # Get the best scoring models from both independent sets
-        new_pof = ParseOutpuFile(self.pof1.output_file)
+        new_pof = ParseOutputFile(self.pof1.output_file)
         pof_all = concatenate_pofs(new_pof, self.pof2)
         return pof_all.get_best_scoring_models(num)
 
@@ -993,9 +1006,20 @@ def concatenate_pofs(pof1, pof2):
         all_models = pof1.models
 
     if len(pof2.models)==0:
-        all_models += pof2.get_all_models()
+        pof2_models = pof2.get_all_models()
+        if type(all_models) == list and type(pof2_models) == list:
+            all_models.append(pof2_models)
+        elif type(all_models) == tuple and type(pof2_models) == list:
+            all_models += tuple(pof2_models)
+        else:
+            all_models += pof2_models
     else:
-        all_models += pof2.models
+        if type(all_models) == list and type(pof2.models) == list:
+            all_models.append(pof2.models)
+        elif type(all_models) == tuple and type(pof2.models) == list:
+            all_models += tuple(pof2.models)
+        else:
+            all_models += pof2.models
 
     pof1.models = all_models
 
